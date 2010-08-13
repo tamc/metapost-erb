@@ -1,0 +1,15 @@
+= Metapost-erb
+
+A simple tool to turn erb templates into metapost files, run the metapost, and open the resulting files in Preview.
+
+Also includes some support libraries to help make drawing grids and charts easier.
+
+NB: when I say easier, I mean easier given I know ruby much better than I know metapost. There are probably elegant ways of doing this stuff in metapost itself.
+
+Usage:
+metapost-erb filenameoferb.erb
+
+
+This software is (c) 2010 Green on Black Ltd and distributed under the open source MIT [http://www.opensource.org/licenses/mit-license.php] licence. (See LICENCE for the wording).
+
+

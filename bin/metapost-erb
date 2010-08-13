@@ -1,0 +1,44 @@
+#!/usr/bin/ruby
+
+require 'erb'
+require_relative '../lib/metapost-erb'
+
+metapost_command = 'mpost'
+
+puts "Loading template '#{ARGV[0]}'"
+template = IO.readlines(ARGV[0]).join
+
+template_directory = File.dirname(File.expand_path(ARGV[0]))
+
+support_library = File.basename(ARGV[0],'.*')
+support_module = support_library.split(/[^a-zA-Z0-9]/).map { |w| w.capitalize }.join
+metapost_name = ARGV[1] || (File.basename(ARGV[0],'.*') + '.mp')
+log_file_name = (File.basename(ARGV[1] || ARGV[0],'.*') + '.log')
+
+begin
+  puts "Trying to load supporting library #{support_library} with module #{support_module} "
+  require File.join(template_directory,support_library)
+  include eval(support_module)
+rescue LoadError => e
+  puts e
+  puts "No support library #{support_library} found"
+end
+
+puts "Compiling template"
+erb = ERB.new(template)
+metapost = erb.result(binding)
+  
+puts "Writing metapost to #{metapost_name}"
+File.open(metapost_name,'w') do |f|
+  puts metapost
+  f.puts metapost
+end
+
+puts "Running metapost"
+puts `#{metapost_command} -interaction=nonstopmode #{metapost_name}`
+
+puts "Opening files"
+logfile = IO.readlines(log_file_name).join
+logfile[/files? written:(.*)/m,1].split(/.. /).map(&:strip).each do |output|
+  `open #{output}`
+end

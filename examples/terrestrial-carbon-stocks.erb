@@ -1,0 +1,99 @@
+%  Estimates of terrestrial carbon stocks from IPCC TAR 3 ("The Carbon Cycle and Atmospheric Carbon Dioxide") Table 3.2
+<%= credits %>
+<% 
+x_axis_unit_label = "btex Area $10^9$ ha etex"
+x_axis_range = (0..15)
+x_minor_grid_step = 1
+x_major_grid_step = 5
+
+case y_units = ARGV[1] || 'ktCO2e'
+  when 'ktCO2e'
+    y_axis_unit_label = "btex Carbon density (ktCO$_{2}$e/ha) etex"
+    y_axis_range = (0..3)
+    y_minor_grid_step = 0.1
+    y_major_grid_step = 1
+    y_axis_conversion = lambda { |c| c * (44.0/12.0)/1000.0  }
+    comparison_label = "100 GtCO$_{2}$e (c. 2 years of man-made emissions)"
+  when 'tC'
+    y_axis_unit_label = "btex Carbon density (tC/ha) etex"
+    y_axis_range = (0..800)
+    y_minor_grid_step = 10
+    y_major_grid_step = 100
+    y_axis_conversion = lambda { |c| c } # No conversion
+    comparison_label = "10 GtC (c. 1 year of man-made emissions)"    
+  end
+%>
+
+input boxes
+input TEX
+prologues:=3;
+outputtemplate := "%j-%3c.eps";
+beginfig(1);
+
+  % Define the scaling and axes
+  chart_width := 10 cm;
+  chart_height := 10cm;
+  xunit := (chart_width / <%= x_axis_range.max %>);
+  yunit := (chart_height / <%= y_axis_range.max %> );
+  
+  % Define colours
+  % Grid
+  color minor_grid_color; minor_grid_color = 0.95 white;
+  color major_grid_color; major_grid_color = 0.85 white;
+  color grid_label_color; grid_label_color = black;
+
+  % Stacks
+  color outer_box_color; outer_box_color = 0.3 white;
+  color soil_color; soil_color = (1,0.5,0.1);
+  color plant_color; plant_color = (0,1.0,0);
+  color soil_label_color; soil_label_color = soil_color * 0.9;
+  color plant_label_color; plant_label_color = plant_color * 0.5;
+  
+  % Comparator
+  color comparator_box_color; comparator_box_color = black;
+  
+  % Draw the grid lines
+  <%= grid_lines x_axis_range.step(x_minor_grid_step), y_axis_range.step(y_minor_grid_step), 'minor_grid_color' %>
+  <%= grid_lines x_axis_range.step(x_major_grid_step), y_axis_range.step(y_major_grid_step), 'major_grid_color' %>
+  
+  % Draw the grid labels
+  <%= grid_labels x_axis_range.step(x_major_grid_step), y_axis_range.step(y_major_grid_step), 'grid_label_color' %>
+  
+  % Draw the axes labels
+  label.llft( <%= x_axis_unit_label %>, (<%= x_axis_range.max %> xunit,-0.5cm) );
+  label.llft( <%= y_axis_unit_label %> rotated 90, (-0.75cm, <%= y_axis_range.max %> yunit) );
+  
+  % Draw the stacks
+  <%= 
+  chart ['soil_color','plant_color'] do
+    stack 'Wetlands'                            ,0.35   ,[ 643,43 ].map(&y_axis_conversion)
+    stack 'Boreal forests'                      ,1.37   ,[ 344,64 ].map(&y_axis_conversion) 
+    stack 'Tropical forests'                    ,1.76   ,[ 123,120].map(&y_axis_conversion)
+    stack 'Temperate grasslands \& shrublands'  ,1.25   ,[ 236,7  ].map(&y_axis_conversion)  
+    stack 'Temperate forests'                   ,1.04   ,[ 96 ,57 ].map(&y_axis_conversion)
+    stack 'Tropical savannas \& grasslands'     ,2.25   ,[ 117,29 ].map(&y_axis_conversion) 
+    stack 'Tundra'                              ,0.95   ,[ 127,6  ].map(&y_axis_conversion)  
+    stack 'Croplands'                           ,1.60   ,[ 80 ,2  ].map(&y_axis_conversion)
+    stack 'Deserts and semi deserts'            ,4.55   ,[ 42 ,2  ].map(&y_axis_conversion)
+    
+    stacks.each do |stack_name,boxes|
+      box_draw "draw #{boxes.first}.sw--#{boxes.last}.nw--#{boxes.last}.ne--#{boxes.first}.se--cycle withcolor outer_box_color"
+      label_box boxes.last, stack_name, :n, 'outer_box_color'
+    end
+
+    label_box stacks['Deserts and semi deserts'].first, "in first 1m of soil", :e, 'soil_label_color'
+    label_box stacks['Deserts and semi deserts'].last, "in plants", :e, 'plant_label_color'
+  end 
+  %>
+  
+  % Comparison
+  boxit.comparator();
+  comparator.sw = (<%= x_axis_range.max-x_minor_grid_step %> xunit, <%= y_axis_range.max-y_minor_grid_step %>  yunit);
+  comparator.ne = (<%= x_axis_range.max %> xunit, <%= y_axis_range.max %>  yunit);
+  draw bpath(comparator) withcolor comparator_box_color;
+  fill bpath(comparator) withcolor 0.9*white+0.1*comparator_box_color;
+  <%= label_box 'comparator', comparison_label, :e %>
+
+endfig;
+
+end;
